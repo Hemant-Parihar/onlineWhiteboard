@@ -1,18 +1,17 @@
-var canvas, context;
+var canvas,
+    context,
+    dragging = false,
+    dragStartLocation,
+    snapshot,
+    plots=[];
 
-
-
-var dragging = false;
-var dragStartLocation, snapshot;
-
-//canvas.width = window.innerWidth;
-//canvas.height = window.innerHeight;
+let base64;
 
 function getCanvasCoordinates(event) {
-    var x = event.clientX - canvas.getBoundingClientRect().left,
-        y = event.clientY - canvas.getBoundingClientRect().top;
+    var x = event.offsetX || event.clientX - canvas.getBoundingClientRect().left,
+        y = event.offsetY || event.clientY - canvas.getBoundingClientRect().top;
+    plots.push({x: x, y: y});
 
-    return {x: x, y : y};
 }
 
 function takeSnapshot() {
@@ -24,57 +23,88 @@ function restoreSnapshot() {
 }
 
 
-function drawLine(position) {
+function drawLine() {
     context.beginPath();
-    context.moveTo(dragStartLocation.x, dragStartLocation.y);
-    context.lineTo(position.x, position.y);
+    context.moveTo(plots[0].x, plots[0].y);
+
+    for(var i=1; i<plots.length; i++) {
+        context.lineTo(plots[i].x, plots[i].y);
+    }
     context.stroke();
-}
-
-function dragStart(event) {
-    //console.log(getCanvasCoordinates(event));
-    dragging = true;
-    dragStartLocation = getCanvasCoordinates(event);
-    takeSnapshot();
-    //console.log(dragStartLocation);
-}
-
-function drag(event) {
-    //console.log(getCanvasCoordinates(event));
-    var position;
-    if (dragging == true) {
-        restoreSnapshot();
-        position = getCanvasCoordinates(event);
-        drawLine(position);
+    if(dragging==false)
+    {
+        plots =[];
     }
 
 }
 
+function dragStart(event) {
+    dragging = true;
+    getCanvasCoordinates(event);
+    takeSnapshot();
+}
+
+function drag(event) {
+    var position;
+    if (dragging === true) {
+
+        base64 = canvas.toDataURL("image/png");
+        ws.send(base64);
+
+        restoreSnapshot();
+        getCanvasCoordinates(event);
+        drawLine();
+    }
+}
+
 function dragStop(event) {
-    //console.log(getCanvasCoordinates(event));
     dragging = false;
     restoreSnapshot();
-    var position = getCanvasCoordinates(event);
-    drawLine(position);
-    //console.log(position);
+    getCanvasCoordinates(event);
+    drawLine();
 }
 
 function init() {
-    canvas = document.getElementById("myCanvas");
+    canvas = document.getElementById("canvas");
     context = canvas.getContext('2d');
     context.strokeStyle = 'purple';
-    context.lineWidth = 4;
-    //context.lineCap = 'round';
-
-
-    // Now we will draw when we have three event.
-    // 1. MouseDown 2. MouseMove 3. MouseUp
+    context.fillStyle = 'yellow';
+    context.lineWidth = 2;
+    context.lineCap = 'round';
 
     canvas.addEventListener('mousedown', dragStart, false);
     canvas.addEventListener('mousemove', drag, false);
     canvas.addEventListener('mouseup', dragStop, false);
 }
 
+
 window.addEventListener('load', init, false);
 
-console.log('hello');
+//WEBSOCKET
+let ws = new WebSocket("ws://localhost:8080/canvas");
+ws.onopen = function () {
+    // Web Socket is connected, send data using send()
+    ws.send("Message to send");
+    console.log("Message is sent...");
+};
+/**
+ *
+ * @param evt
+ */
+ws.onmessage = function (evt) {
+    //console.log(evt.data);
+    let image = new Image();
+    image.onload = function () {
+        context.drawImage(image,0,0);
+    };
+    image.src = event.data;
+};
+
+ws.onclose = function () {
+    // websocket is closed.
+    console.log("Connection is closed...");
+};
+
+ws.onerror = function (evt) {
+    console.log(evt)
+}
