@@ -2,6 +2,11 @@
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
+
+use Ratchet\Http\HttpServer;
+use Ratchet\Server\IoServer;
+use Ratchet\WebSocket\WsServer;
+
 // Make sure composer dependencies have been installed
 require __DIR__ . '/vendor/autoload.php';
 
@@ -40,6 +45,15 @@ class MyChat implements MessageComponentInterface {
 }
 
 // Run the server application through the WebSocket protocol on port 8080
-$app = new Ratchet\App('localhost', 8080);
-$app->route('/canvas', new MyChat);
-$app->run();
+//$app = new Ratchet\App('localhost', 8080);
+//$app->route('/canvas', new MyChat);
+//$app->run();
+
+
+
+$server = IoServer::factory(
+    new HttpServer(
+        new WsServer(new MyChat())//THIS IS THE CUSTOM CLASS NAME THAT HAS WEBSOCKET HANDLERS
+    ), 8080, '172.24.25.187'
+);
+$server->run();

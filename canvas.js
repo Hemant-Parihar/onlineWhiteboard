@@ -81,7 +81,8 @@ function init() {
 window.addEventListener('load', init, false);
 
 //WEBSOCKET
-let ws = new WebSocket("ws://localhost:8080/canvas");
+let ws = new WebSocket("ws://172.24.25.187:8080/socket");
+
 ws.onopen = function () {
     // Web Socket is connected, send data using send()
     ws.send("Message to send");
