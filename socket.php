@@ -54,6 +54,6 @@ class MyChat implements MessageComponentInterface {
 $server = IoServer::factory(
     new HttpServer(
         new WsServer(new MyChat())//THIS IS THE CUSTOM CLASS NAME THAT HAS WEBSOCKET HANDLERS
-    ), 8080, '172.24.25.187'
+    ), 8080, '192.168.43.105'
 );
 $server->run();
